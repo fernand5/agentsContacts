@@ -13,9 +13,10 @@
 Route::get('/', function () {
     return view('index');
 });
-Route::get('/index', function () {
-    return view('index');
-});
+//Route::get('/index', function () {
+//    return view('index');
+//});
+Route::get('/index', 'ZipCodeController@index');
 Route::get('/truncate', 'ZipCodeController@truncate');
 
 Route::resource('/zipcode', 'ZipCodeController');

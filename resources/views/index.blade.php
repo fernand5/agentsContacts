@@ -1,3 +1,4 @@
+<?php ini_set('max_execution_time', 120);?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -32,6 +33,7 @@
 </head>
 
     <body>
+
         <div class="container">
             <div class="content">
                 <h2 style="text-align: center;">Select the Agents</h2>

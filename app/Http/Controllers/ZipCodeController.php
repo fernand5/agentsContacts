@@ -14,14 +14,13 @@ class ZipCodeController extends Controller
 
     public function index()
     {
-//        echo "THIS: ".;
         $this->proccessCSV();
         return view('index');
     }
 
     public function truncate(){
         ZipCode::query()->truncate();
-        return redirect()->route('index');
+        return redirect('index');
     }
 
     public function store(Request $request)
@@ -32,15 +31,12 @@ class ZipCodeController extends Controller
 
         ]);
         $agent1=ZipCode::where('code', '=', $request->zipCodeAngent1)->first();
-//        print_r($agent1->name);
+
         $agent2=ZipCode::where('code', '=', $request->zipCodeAngent2)->first();
 
         $contacts=ZipCode::where('code', '!=', $request->zipCodeAngent2)->where('code', '!=', $request->zipCodeAngent1)->get();
-//        print_r($agent2->name);
-//        echo "contactos:";
+
         foreach ($contacts as $key => $value) {
-//            echo "{$key} => {$value} ";
-//            echo "contacto: ".$value["name"]." zipcode: ".$value["code"];
             $distanceWithAgent1=$this->vincentyGreatCircleDistance($value["lat"],$value["lng"],$agent1["lat"],$agent1["lng"]);
             $distanceWithAgent2=$this->vincentyGreatCircleDistance($value["lat"],$value["lng"],$agent2["lat"],$agent2["lng"]);
 
@@ -53,11 +49,7 @@ class ZipCodeController extends Controller
                     ->where('code', $value["code"])
                     ->update(['agentId' => 2]);
             }
-//            echo "distanceAgent1: ".$distanceWithAgent1;
-//            echo "distanceAgent2: ".$distanceWithAgent2;
-//            echo "<br>";
 
-//            print_r($contacts[$key]);
         }
 
 
@@ -67,12 +59,6 @@ class ZipCodeController extends Controller
             'agent1'=>$agent1["code"],
             'agent2'=>$agent2["code"],
         ]);
-
-//        $this->vincentyGreatCircleDistance(40.6892,-74.0444,48.8583,2.2945)
-//        $agent1=ZipCode::$request->zipCodeAngent1;
-
-
-
     }
 
     public function show($zipCode)
@@ -82,27 +68,18 @@ class ZipCodeController extends Controller
 
     public function proccessCSV(){
         $data=null;
-        Facades\Excel::load('testingMulu.csv', function($reader) {
+        Facades\Excel::load('dataContacts.csv', function($reader) {
 
             // Getting all results
-//            $results = $reader->get();
-
-            // ->all() is a wrapper for ->get() and will work the same
             $data = $reader->get();
 
-//            print_r($results);
             foreach ($data as $key => $value) {
-                // $arr[3] will be updated with each value from $arr...
-
-
-
 
                     //Do stuff when user exists.
                 $user = ZipCode::where('code', $value["zipcode"])->get();
 
 
                 if ($user->isEmpty()){
-//                    $firstUser = $user->first()
 
                     $zipCode= new ZipCode();
 
@@ -116,14 +93,10 @@ class ZipCodeController extends Controller
                     $zipCode->lng=$valuesLatLng["lng"];
 
                     $zipCode->save();
-                    echo "nombre: ".$zipCode->name;
-                    echo "zip: ".$zipCode->code;
+//                    echo "nombre: ".$zipCode->name;
+//                    echo "zip: ".$zipCode->code;
 
                 }
-
-
-
-//                print_r($arr);
             }
         });
 
