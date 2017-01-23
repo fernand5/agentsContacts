@@ -121,6 +121,23 @@ class ZipCodeController extends Controller
         });
     }
 
+    /**
+     * Build an array with the latitude and longitude from a zip code using google API
+     * @param $zipcode
+     * @return array
+     */
+    protected function zipCodeToLngLat($zipcode){
+        $client = new GuzzleHttp\Client;
+        $res = $client->get('http://maps.googleapis.com/maps/api/geocode/json', ['query' =>  ['address' => $zipcode,'sensor'=>'true']]);
+        $data=json_decode($res->getBody(), true);
+
+
+        $lat=$data["results"][0]["geometry"]["location"]["lat"];
+        $lng=$data["results"][0]["geometry"]["location"]["lng"];
+
+        return array("lat"=>$lat,"lng"=>$lng);
+    }
+
 
     /**
      * Calculates the great-circle distance between two points, with
