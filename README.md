@@ -4,10 +4,11 @@ This code use the Great-circle distance algorithm (https://en.wikipedia.org/wiki
 
 ## Requirements
 - Install composer
-- Run:
+- Run on the root folder:
         ```
         composer uodate
         ```
+        
 ##Install
 - Execute the .sql file (path: database/database.sql) in your server
 - The application take a .CSV file in the path public/dataContacts.csv if you want to refresh the data you should update this file and run  the route /truncate to delete the database and upload new data

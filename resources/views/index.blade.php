@@ -64,6 +64,11 @@
                     {!! Form::text('zipCodeAngent2',null,['class'=>'form-control','placeholder'=>'','required']) !!}
                 </div>
 
+                <div class="form-group">
+                    {!! Form::label('umbral','Umbral') !!}
+                    {!! Form::text('umbral',null,['class'=>'form-control','placeholder'=>'']) !!}
+                </div>
+
 
                 <div class="form-group">
                     {!! Form::submit('Match', ['class'=>'btn btn-form']) !!}

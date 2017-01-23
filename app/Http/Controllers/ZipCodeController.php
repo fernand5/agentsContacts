@@ -14,6 +14,8 @@ class ZipCodeController extends Controller
 
     public function index()
     {
+        $arrayAgent1=array();
+
         $this->proccessCSV();
         return view('index');
     }
@@ -30,6 +32,7 @@ class ZipCodeController extends Controller
             'zipCodeAngent2'=>'exists:zipcodes,code',
 
         ]);
+
         $agent1=ZipCode::where('code', '=', $request->zipCodeAngent1)->first();
 
         $agent2=ZipCode::where('code', '=', $request->zipCodeAngent2)->first();
@@ -52,6 +55,15 @@ class ZipCodeController extends Controller
 
         }
 
+        if(empty($request->umbral)){
+            $request->umbral=0;
+        }
+        if(ZipCode::where(['agentId' => 1])->get()->count()==0){
+            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent1,1);
+        }
+        if(ZipCode::where(['agentId' => 2])->get()->count()==0){
+            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent2,2);
+        }
 
         $results=ZipCode::all();
         return view('results',[
@@ -102,9 +114,7 @@ class ZipCodeController extends Controller
 
 
     }
-    protected function getCSV(){
 
-    }
     protected function zipCodeToLngLat($zipcode){
         $client = new GuzzleHttp\Client;
         $res = $client->get('http://maps.googleapis.com/maps/api/geocode/json', ['query' =>  ['address' => $zipcode,'sensor'=>'true']]);
@@ -116,9 +126,11 @@ class ZipCodeController extends Controller
 
         return array("lat"=>$lat,"lng"=>$lng);
     }
-    protected function midPoint($pointA,$pointB){
-        $midPoint=($pointA+$pointB)/2;
-        return $midPoint;
+
+    protected function umbralFunction($umbral){
+        for ($i=0;$i<$umbral;$i++){
+
+        }
     }
 
     /**
@@ -147,5 +159,30 @@ class ZipCodeController extends Controller
 
         $angle = atan2(sqrt($a), $b);
         return $angle * $earthRadius;
+    }
+
+    protected function getLessDistanceForUmbral($contacts,$umbral,$agent,$numberAgent){
+        $arrayPriority=array();
+        foreach ($contacts as $key => $value) {
+            $distanceWithAgent1=$this->vincentyGreatCircleDistance($agent["lat"],$agent["lng"],$value["lat"],$value["lng"]);
+
+            if(count($arrayPriority)==$umbral){
+                $arrayPriority[$value["code"]]=$distanceWithAgent1;
+//                array_push($arrayPriority,$distanceWithAgent1);
+                asort($arrayPriority);
+                array_pop($arrayPriority);
+//                $arrayPriority=array_slice($arrayPriority, 0,$umbral);
+            }else{
+                $arrayPriority[$value["code"]]=$distanceWithAgent1;
+                asort($arrayPriority);
+            }
+        }
+        foreach ($arrayPriority as $key => $value) {
+            DB::table('zipcodes')
+                ->where('code', $key)
+                ->update(['agentId' => $numberAgent]);
+        }
+
+//        print_r($arrayPriority);
     }
 }
