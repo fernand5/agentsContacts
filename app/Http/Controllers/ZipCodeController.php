@@ -12,19 +12,32 @@ use DB;
 class ZipCodeController extends Controller
 {
 
+    /**
+     * Call the function to process the .CSV file and show the index view
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
     public function index()
     {
-        $arrayAgent1=array();
-
         $this->proccessCSV();
         return view('index');
     }
 
+    /**
+     * Truncate database for store new data from .CVS file
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
+     */
     public function truncate(){
         ZipCode::query()->truncate();
         return redirect('index');
     }
 
+    /**
+     * Validate form of the index view
+     * Split the agents and call the respective functions for them
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
     public function store(Request $request)
     {
         $this->validate($request, [
@@ -73,11 +86,9 @@ class ZipCodeController extends Controller
         ]);
     }
 
-    public function show($zipCode)
-    {
-        print_r($this->zipCodeToLngLat($zipCode));
-    }
-
+    /**
+     * Process the .CSV file and store it in the database
+     */
     public function proccessCSV(){
         $data=null;
         Facades\Excel::load('dataContacts.csv', function($reader) {
@@ -105,33 +116,11 @@ class ZipCodeController extends Controller
                     $zipCode->lng=$valuesLatLng["lng"];
 
                     $zipCode->save();
-//                    echo "nombre: ".$zipCode->name;
-//                    echo "zip: ".$zipCode->code;
-
                 }
             }
         });
-
-
     }
 
-    protected function zipCodeToLngLat($zipcode){
-        $client = new GuzzleHttp\Client;
-        $res = $client->get('http://maps.googleapis.com/maps/api/geocode/json', ['query' =>  ['address' => $zipcode,'sensor'=>'true']]);
-        $data=json_decode($res->getBody(), true);
-
-
-        $lat=$data["results"][0]["geometry"]["location"]["lat"];
-        $lng=$data["results"][0]["geometry"]["location"]["lng"];
-
-        return array("lat"=>$lat,"lng"=>$lng);
-    }
-
-    protected function umbralFunction($umbral){
-        for ($i=0;$i<$umbral;$i++){
-
-        }
-    }
 
     /**
      * Calculates the great-circle distance between two points, with
@@ -161,6 +150,15 @@ class ZipCodeController extends Controller
         return $angle * $earthRadius;
     }
 
+    /**
+     * This function find the less distance from the agent to the contacts
+     * when the agent doesn't have any contacts and the user put a umbral for the
+     * minimum value
+     * @param $contacts
+     * @param $umbral
+     * @param $agent
+     * @param $numberAgent
+     */
     protected function getLessDistanceForUmbral($contacts,$umbral,$agent,$numberAgent){
         $arrayPriority=array();
         foreach ($contacts as $key => $value) {
@@ -168,10 +166,8 @@ class ZipCodeController extends Controller
 
             if(count($arrayPriority)==$umbral){
                 $arrayPriority[$value["code"]]=$distanceWithAgent1;
-//                array_push($arrayPriority,$distanceWithAgent1);
                 asort($arrayPriority);
                 array_pop($arrayPriority);
-//                $arrayPriority=array_slice($arrayPriority, 0,$umbral);
             }else{
                 $arrayPriority[$value["code"]]=$distanceWithAgent1;
                 asort($arrayPriority);
@@ -183,6 +179,5 @@ class ZipCodeController extends Controller
                 ->update(['agentId' => $numberAgent]);
         }
 
-//        print_r($arrayPriority);
     }
 }
