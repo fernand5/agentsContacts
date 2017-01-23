@@ -1,4 +1,4 @@
-# agentsContacts
+# Agents and Contacts
 Project implemented with PHP+Laravel. Application that displays the match  between 2 actors: the Agents and a list of Contacts. The application split the contact list into 2 groups (1 per agent) based on their  zip codes.
 This code use the Great-circle distance algorithm (https://en.wikipedia.org/wiki/Great-circle_distance#Formulas) to calculate the distance between 2 points through latitude and longitude given by google API 
 
@@ -6,7 +6,7 @@ This code use the Great-circle distance algorithm (https://en.wikipedia.org/wiki
 - Install composer
 - Run on the root folder:
         ```
-        composer uodate
+        composer update
         ```
         
 ##Install
