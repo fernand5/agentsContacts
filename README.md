@@ -14,8 +14,8 @@ This code use the Great-circle distance algorithm (https://en.wikipedia.org/wiki
 - The application take a .CSV file in the path public/dataContacts.csv if you want to refresh the data you should update this file and run  the route /truncate to delete the database and upload new data
 - Put the code on your web server
 - Make a .env file with your configuration to connect the database (an example is .env.example file in the root path)
+- Add the following Cron entry to your server ```* * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1``` this execute a task in background for the requests to Google Maps API
 - Run the route /public/index
-- Run in command line ```php artisan schedule:run``` this is a task in background for the requests to Google Maps API
 
 #Possible issue
 If this error appears 
