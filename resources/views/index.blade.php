@@ -22,13 +22,17 @@
     <link href='https://fonts.googleapis.com/css?family=Kaushan+Script' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Roboto+Slab:400,100,300,700' rel='stylesheet' type='text/css'>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDldmqSxw6q72S0JT-HuhvbiAPhrVr-ac&v=3.23&libraries=places"></script>
-
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDldmqSxw6q72S0JT-HuhvbiAPhrVr-ac&v=3.25&libraries=places"></script>
+    <script
+            src="https://code.jquery.com/jquery-3.1.1.js"
+            integrity="sha256-16cdPddA6VdVInumRGo6IbivbERE8p7CQR3HzTBuELA="
+            crossorigin="anonymous"></script>
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+
     <![endif]-->
 </head>
 
@@ -55,19 +59,22 @@
 
                 {!! Form::open(['route'=>'zipcode.store','method'=>'POST']) !!}
 
-                <div class="form-group">
-                    {!! Form::label('angent1','Angent1') !!}
-                    {!! Form::text('zipCodeAngent1',null,['class'=>'form-control','placeholder'=>'','required']) !!}
-                </div>
-                <div class="form-group">
-                    {!! Form::label('angent2','Angent2') !!}
-                    {!! Form::text('zipCodeAngent2',null,['class'=>'form-control','placeholder'=>'','required']) !!}
+                {{--<div class="form-group">--}}
+                    {{--{!! Form::label('angent1','Angent1') !!}--}}
+                    {{--{!! Form::text('zipCodeAngent1',null,['class'=>'form-control','placeholder'=>'','required']) !!}--}}
+                {{--</div>--}}
+                <div class="input_fields_wrap">
+                    <div class="form-group agent">
+                        {!! Form::label('angent','Angent') !!}
+                        {!! Form::text('zipCodeAngent',null,['name'=>'inputs[]','class'=>'form-control','placeholder'=>'','required']) !!}
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    {!! Form::label('umbral','Umbral') !!}
-                    {!! Form::text('umbral',null,['class'=>'form-control','placeholder'=>'']) !!}
-                </div>
+
+                {{--<div class="form-group">--}}
+                    {{--{!! Form::label('umbral','Umbral') !!}--}}
+                    {{--{!! Form::text('umbral',null,['class'=>'form-control','placeholder'=>'']) !!}--}}
+                {{--</div>--}}
 
 
                 <div class="form-group">
@@ -75,8 +82,35 @@
 
                 </div>
                 {!! Form::close() !!}
+                <button id="addAgent" class="btn btn-info" role="button">Add Agent</button>
                 
             </div>
         </div>
     </body>
 </html>
+
+<script>
+    $(document).ready(function () {
+//       $("#addAgent").click(function () {
+//           alert($(".agent").length);
+//       });
+
+        var max_fields      = 20; //maximum input boxes allowed
+        var wrapper         = $(".input_fields_wrap"); //Fields wrapper
+        var add_button      = $("#addAgent"); //Add button ID
+        var agents= $(".agent").length;
+
+        var x = 1; //initlal text box count
+        $(add_button).click(function(e){ //on add input button click
+            e.preventDefault();
+            if(x < max_fields){ //max input box allowed
+                x++; //text box increment
+                $(wrapper).append('<div><label for="">Angent'+$(".agent").length+'</label><input type="text" class="form-control agent" name="inputs[]"/></div>'); //add input box
+            }
+        });
+
+//        $(wrapper).on("click",".remove_field", function(e){ //user click on remove text
+//            e.preventDefault(); $(this).parent('div').remove(); x--;
+//        })
+    });
+</script>

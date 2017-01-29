@@ -6,12 +6,20 @@ use Illuminate\Http\Request;
 
 use App\Http\Requests;
 use App\ZipCode;
+use App\Contact;
+use App\Agent;
 use GuzzleHttp;
 use Maatwebsite\Excel\Facades;
 use DB;
 class ZipCodeController extends Controller
 {
+    private $earthRadius;
 
+    public function __construct()
+    {
+        $this->earthRadius = 6371000;
+        $this->highestValue=INF;
+    }
     /**
      * Call the function to process the .CSV file and show the index view
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
@@ -27,7 +35,15 @@ class ZipCodeController extends Controller
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector
      */
     public function truncate(){
-        ZipCode::query()->truncate();
+        try{
+            DB::statement("SET foreign_key_checks=0");
+            Contact::query()->truncate();
+            DB::statement("SET foreign_key_checks=1");
+        }
+        catch(\Exception $e){
+            $e->getMessage();
+        }
+
         return redirect('index');
     }
 
@@ -40,49 +56,97 @@ class ZipCodeController extends Controller
      */
     public function store(Request $request)
     {
+//        dd($request);
         $this->validate($request, [
-            'zipCodeAngent1'=>'exists:zipcodes,code',
-            'zipCodeAngent2'=>'exists:zipcodes,code',
-
+            'inputs.*'=>'exists:contacts,code',
         ]);
 
-        $agent1=ZipCode::where('code', '=', $request->zipCodeAngent1)->first();
+        $notZipCodeCondition=[];
+        $agentsInfo=[];
+        try{
+            DB::statement("SET foreign_key_checks=0");
+            Agent::query()->truncate();
+            DB::statement("SET foreign_key_checks=1");
+        }
+        catch(\Exception $e){
+            $e->getMessage();
+        }
 
-        $agent2=ZipCode::where('code', '=', $request->zipCodeAngent2)->first();
 
-        $contacts=ZipCode::where('code', '!=', $request->zipCodeAngent2)->where('code', '!=', $request->zipCodeAngent1)->get();
+        foreach ($request->inputs as $agents){
 
-        foreach ($contacts as $key => $value) {
-            $distanceWithAgent1=$this->vincentyGreatCircleDistance($value["lat"],$value["lng"],$agent1["lat"],$agent1["lng"]);
-            $distanceWithAgent2=$this->vincentyGreatCircleDistance($value["lat"],$value["lng"],$agent2["lat"],$agent2["lng"]);
+            array_push($notZipCodeCondition,$agents);
+            try{
+                $contact=Contact::where('code', '=', $agents)->first();
 
-            if($distanceWithAgent1<$distanceWithAgent2){
-                DB::table('zipcodes')
-                    ->where('code', $value["code"])
-                    ->update(['agentId' => 1]);
-            }else{
-                DB::table('zipcodes')
-                    ->where('code', $value["code"])
-                    ->update(['agentId' => 2]);
+                $newAgent=new Agent();
+                $newAgent->contact()->associate($contact->idContacts);
+                $newAgent->save();
+            }
+            catch(\Exception $e){
+                $e->getMessage();
+            }
+
+            array_push($agentsInfo,$newAgent);
+
+        }
+        try{
+            $contacts=Contact::select('*')->whereNotIn('code', $notZipCodeCondition)->get();
+        }
+        catch(\Exception $e){
+            $e->getMessage();
+        }
+        $coloredAgents=[];
+
+        foreach ($contacts as $keyContact => $valueContact) {
+            $shortDistance=$this->highestValue;
+            $bestAgent="";
+            foreach ($agentsInfo as $keyAgent => $valueAgent){
+
+                $distanceWithAgent=$this->vincentyGreatCircleDistance($valueContact["lat"],$valueContact["lng"],$valueAgent->contact->lat,$valueAgent->contact->lng);
+
+                if($distanceWithAgent<$shortDistance){
+                    $shortDistance=$distanceWithAgent;
+                    $bestAgent=$valueAgent->idAgent;
+                }
+                array_push($coloredAgents,$valueAgent->contact->code);
+
+            }
+            try{
+                $contact=Contact::where('idContacts', $valueContact["idContacts"])->firstOrFail();
+                $contact->idAgent=$bestAgent;
+                $contact->save();
+            }
+            catch(\Exception $e){
+                $e->getMessage();
             }
 
         }
 
-        if(empty($request->umbral)){
-            $request->umbral=0;
+//        print_r($agentsInfo[1]->contact()->count());
+
+//        if(empty($request->umbral)){
+//            $request->umbral=0;
+//        }
+//        if(ZipCode::where(['agentId' => 1])->get()->count()==0){
+//            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent1,1);
+//        }
+//        if(ZipCode::where(['agentId' => 2])->get()->count()==0){
+//            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent2,2);
+//        }
+//
+        try{
+            $results=Contact::all();
         }
-        if(ZipCode::where(['agentId' => 1])->get()->count()==0){
-            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent1,1);
-        }
-        if(ZipCode::where(['agentId' => 2])->get()->count()==0){
-            $this->getLessDistanceForUmbral($contacts,$request->umbral,$agent2,2);
+        catch(\Exception $e){
+            $e->getMessage();
         }
 
-        $results=ZipCode::all();
+
+
         return view('results',[
             'results'=>$results,
-            'agent1'=>$agent1["code"],
-            'agent2'=>$agent2["code"],
+            'agents'=>$coloredAgents
         ]);
     }
 
@@ -90,35 +154,43 @@ class ZipCodeController extends Controller
      * Process the .CSV file and store it in the database
      */
     public function proccessCSV(){
-        $data=null;
-        Facades\Excel::load('dataContacts.csv', function($reader) {
 
-            // Getting all results
-            $data = $reader->get();
+        try{
+            Facades\Excel::load('dataContacts.csv', function($reader) {
 
-            foreach ($data as $key => $value) {
+                // Getting all results
+                $data = $reader->get();
 
-                    //Do stuff when user exists.
-                $user = ZipCode::where('code', $value["zipcode"])->get();
+                foreach ($data as $key => $value) {
 
 
-                if ($user->isEmpty()){
+                    $user = Contact::where('code', $value["zipcode"])->get();
 
-                    $zipCode= new ZipCode();
 
-                    $zipCode->name=$value["name"];
 
-                    $zipCode->code=$value["zipcode"];
+                    if ($user->isEmpty()){
 
-                    $valuesLatLng=$this->zipCodeToLngLat($zipCode->code);
+                        $zipCode= new Contact();
 
-                    $zipCode->lat=$valuesLatLng["lat"];
-                    $zipCode->lng=$valuesLatLng["lng"];
+                        $zipCode->name=$value["name"];
 
-                    $zipCode->save();
+                        $zipCode->code=$value["zipcode"];
+
+//                        $valuesLatLng=$this->zipCodeToLngLat($zipCode->code);
+//
+//                        $zipCode->lat=$valuesLatLng["lat"];
+//                        $zipCode->lng=$valuesLatLng["lng"];
+
+                        $zipCode->save();
+
+
+                    }
                 }
-            }
-        });
+            });
+        }catch (\Exception $e){
+            $e->getMessage();
+        }
+
     }
 
     /**
@@ -149,8 +221,8 @@ class ZipCodeController extends Controller
      * @param float $earthRadius Mean earth radius in [m]
      * @return float Distance between points in [m] (same as earthRadius)
      */
-    protected static function vincentyGreatCircleDistance(
-        $latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 6371000)
+    protected function vincentyGreatCircleDistance(
+        $latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo)
     {
         // convert from degrees to radians
         $latFrom = deg2rad($latitudeFrom);
@@ -164,7 +236,7 @@ class ZipCodeController extends Controller
         $b = sin($latFrom) * sin($latTo) + cos($latFrom) * cos($latTo) * cos($lonDelta);
 
         $angle = atan2(sqrt($a), $b);
-        return $angle * $earthRadius;
+        return $angle * $this->earthRadius;
     }
 
     /**
@@ -191,9 +263,14 @@ class ZipCodeController extends Controller
             }
         }
         foreach ($arrayPriority as $key => $value) {
-            DB::table('zipcodes')
-                ->where('code', $key)
-                ->update(['agentId' => $numberAgent]);
+            try{
+                DB::table('zipcodes')
+                    ->where('code', $key)
+                    ->update(['agentId' => $numberAgent]);
+            }catch (\Exception $e){
+                $e->getMessage();
+            }
+
         }
 
     }

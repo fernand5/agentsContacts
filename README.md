@@ -15,6 +15,7 @@ This code use the Great-circle distance algorithm (https://en.wikipedia.org/wiki
 - Put the code on your web server
 - Make a .env file with your configuration to connect the database (an example is .env.example file in the root path)
 - Run the route /public/index
+- Run in command line ```php artisan schedule:run``` this is a task in background for the requests to Google Maps API
 
 #Possible issue
 If this error appears 
